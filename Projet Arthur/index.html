@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mini Jeux</title>
+<style>
+body {
+    font-family: "Poppins", Arial, sans-serif;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    width: 80%;
+    max-width: 500px;
+    animation: fadeIn 1s ease-in-out;
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px #000;
+}
+
+.btnJeu {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 15px 0;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.4em;
+    cursor: pointer;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
+}
+
+.btnJeu:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(20px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🎮 Mini Jeux</h1>
+
+    <button class="btnJeu" onclick="window.location.href='pendu.html'">🎣 Jeu du Pendu</button>
+    <button class="btnJeu" onclick="window.location.href='morpion.html'">⭕ Jeu du Morpion</button>
+    <button class="btnJeu" onclick="window.location.href='Echec.html'">♟️ Jeu d'Échecs</button>
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Jeu du Pendu</title>
+
+<style>
+    body {
+        font-family: "Poppins", Arial, sans-serif;
+        background: linear-gradient(135deg, #ff6ec4, #7873f5, #42f5d4);
+        color: white;
+        text-align: center;
+        padding-top: 40px;
+        margin: 0;
+        background-size: 600% 600%;
+        animation: gradientAnimation 15s ease infinite;
+    }
+
+    @keyframes gradientAnimation {
+        0% {background-position:0% 50%;}
+        50% {background-position:100% 50%;}
+        100% {background-position:0% 50%;}
+    }
+
+    h1 {
+        font-size: 2.8em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 10px #000;
+    }
+
+    #motAffiche {
+        font-size: 2.2em;
+        letter-spacing: 12px;
+        margin: 20px 0;
+    }
+
+    #erreurs {
+        font-size: 1.4em;
+        margin-bottom: 20px;
+    }
+
+    #clavier button {
+        margin: 5px;
+        padding: 10px 15px;
+        font-size: 18px;
+        border: none;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    #clavier button:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+    }
+
+    #clavier button:disabled {
+        background: rgba(255,255,255,0.1);
+        color: #777;
+        cursor: default;
+        transform: none;
+    }
+
+    canvas {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .btnRejouer {
+        padding: 15px 25px;
+        font-size: 20px;
+        border: none;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s;
+        backdrop-filter: blur(4px);
+        margin-top: 20px;
+    }
+
+    .btnRejouer:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+    }
+
+    /* Flèche retour moderne */
+    .btnRetour {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        width: 65px;
+        height: 65px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(255,255,255,0.18);
+        border-radius: 50%;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 2px solid rgba(255,255,255,0.5);
+        box-shadow: 0 6px 25px rgba(0,0,0,0.35), 0 0 20px rgba(255,255,255,0.35);
+        transition: 0.35s ease;
+        cursor: pointer;
+        text-decoration: none;
+        z-index: 99;
+    }
+
+    .btnRetour svg {
+        width: 32px;
+        height: 32px;
+        fill: white;
+        transition: 0.3s;
+    }
+
+    .btnRetour:hover {
+        background: rgba(255,255,255,0.35);
+        transform: scale(1.18) rotate(-6deg);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.55), 0 0 28px rgba(255,255,255,0.7);
+    }
+
+    .btnRetour:hover svg {
+        transform: translateX(-3px);
+    }
+
+    /* ? bouton aide */
+    .btnHelp {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        width: 55px;
+        height: 55px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 28px;
+        color: white;
+        cursor: pointer;
+        border: 2px solid rgba(255,255,255,0.5);
+        backdrop-filter: blur(10px);
+        transition: 0.3s;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        z-index: 99;
+    }
+
+    .btnHelp:hover {
+        background: rgba(255,255,255,0.35);
+        transform: scale(1.15);
+    }
+
+    /* Fenêtre d'aide */
+    #aidePopup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.55);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+    }
+
+    #aideBox {
+        width: 80%;
+        max-width: 400px;
+        background: rgba(255,255,255,0.15);
+        padding: 25px;
+        border-radius: 15px;
+        backdrop-filter: blur(12px);
+        text-align: left;
+        box-shadow: 0 0 25px rgba(0,0,0,0.4);
+        animation: popupFade .35s ease;
+        color: white;
+    }
+
+    @keyframes popupFade {
+        from { transform: scale(0.7); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+    }
+
+    #btnCloseAide {
+        float: right;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.3);
+    }
+
+    #btnCloseAide:hover {
+        background: rgba(255,255,255,0.5);
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🎣 Jeu du Pendu</h1>
+
+<!-- Bouton Help -->
+<div class="btnHelp" onclick="ouvrirAide()">?</div>
+
+<!-- Fenêtre d'aide -->
+<div id="aidePopup">
+    <div id="aideBox">
+        <div id="btnCloseAide" onclick="fermerAide()">X</div>
+        <h2>ℹ️ Comment jouer ?</h2>
+        <p>Le but est de deviner un mot caché en proposant des lettres.</p>
+        <p>📌 À chaque erreur, une partie du pendu est dessinée.</p>
+        <p>📌 Tu as droit à 8 erreurs maximum.</p>
+        <p>📌 Clique sur les lettres pour les tester.</p>
+        <p>🎉 Trouve tout le mot avant que le pendu soit complet !</p>
+    </div>
+</div>
+
+<canvas id="pendu" width="250" height="260"></canvas>
+
+<p id="motAffiche"></p>
+<p id="erreurs">Erreurs : 0 / 8</p>
+
+<div id="clavier"></div>
+
+<a href="index.html" class="btnRetour">
+    <svg viewBox="0 0 24 24">
+        <path d="M15 18l-6-6 6-6" />
+    </svg>
+</a>
+
+<button class="btnRejouer" onclick="nouvellePartie()">🔁 Rejouer</button>
+
+<script>
+/* ---------- POPUP AIDE ---------- */
+function ouvrirAide() {
+    document.getElementById("aidePopup").style.display = "flex";
+}
+function fermerAide() {
+    document.getElementById("aidePopup").style.display = "none";
+}
+
+/* ---------- JEU DU PENDU ---------- */
+const canvas = document.getElementById("pendu");
+const ctx = canvas.getContext("2d");
+
+function resetCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function dessinerPendu(etape) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#fff";
+
+    if (etape >= 1) { ctx.beginPath(); ctx.moveTo(20, 240); ctx.lineTo(200, 240); ctx.stroke(); }
+    if (etape >= 2) { ctx.beginPath(); ctx.moveTo(60, 240); ctx.lineTo(60, 20); ctx.stroke(); }
+    if (etape >= 3) { ctx.beginPath(); ctx.moveTo(60, 20); ctx.lineTo(150, 20); ctx.stroke(); }
+    if (etape >= 4) { ctx.beginPath(); ctx.moveTo(150, 20); ctx.lineTo(150, 60); ctx.stroke(); }
+    if (etape >= 5) { ctx.beginPath(); ctx.arc(150, 80, 20, 0, Math.PI * 2); ctx.stroke(); }
+    if (etape >= 6) { ctx.beginPath(); ctx.moveTo(150, 100); ctx.lineTo(150, 160); ctx.stroke(); }
+    if (etape >= 7) {
+        ctx.beginPath();
+        ctx.moveTo(150, 120); ctx.lineTo(120, 150);
+        ctx.moveTo(150, 120); ctx.lineTo(180, 150);
+        ctx.moveTo(150, 160); ctx.lineTo(120, 200);
+        ctx.moveTo(150, 160); ctx.lineTo(180, 200);
+        ctx.stroke();
+    }
+    if (etape >= 8) {
+        ctx.beginPath();
+        ctx.moveTo(140, 75); ctx.lineTo(148, 83);
+        ctx.moveTo(148, 75); ctx.lineTo(140, 83);
+        ctx.moveTo(152, 75); ctx.lineTo(160, 83);
+        ctx.moveTo(160, 75); ctx.lineTo(152, 83);
+        ctx.stroke();
+    }
+}
+
+const mots = ["ORANGE","ELEPHANT","MAISON","BATEAU","TOMATE","ROBOT","DRAGON","CHIEN","SOURIS"];
+let mot;
+let motCache;
+let erreurs;
+let fini = false;
+
+const affichageMot = document.getElementById("motAffiche");
+const affichageErreurs = document.getElementById("erreurs");
+const clavier = document.getElementById("clavier");
+
+function creerClavier() {
+    clavier.innerHTML = "";
+    for (let i = 65; i <= 90; i++) {
+        let lettre = String.fromCharCode(i);
+        let btn = document.createElement("button");
+        btn.textContent = lettre;
+        btn.onclick = () => testerLettre(lettre, btn);
+        clavier.appendChild(btn);
+    }
+}
+
+function nouvellePartie() {
+    erreurs = 0;
+    fini = false;
+    mot = mots[Math.floor(Math.random() * mots.length)];
+    motCache = "_".repeat(mot.length);
+
+    resetCanvas();
+    affichageMot.textContent = motCache;
+    affichageErreurs.textContent = "Erreurs : 0 / 8";
+    creerClavier();
+}
+
+function testerLettre(lettre, bouton) {
+    if (fini) return;
+
+    bouton.disabled = true;
+
+    if (mot.includes(lettre)) {
+        let n = "";
+        for (let i = 0; i < mot.length; i++) {
+            n += (mot[i] === lettre ? lettre : motCache[i]);
+        }
+        motCache = n;
+        affichageMot.textContent = motCache;
+
+        if (!motCache.includes("_")) {
+            fini = true;
+            setTimeout(() => alert("🎉 Bravo ! Tu as gagné !"), 200);
+        }
+
+    } else {
+        erreurs++;
+        affichageErreurs.textContent = "Erreurs : " + erreurs + " / 8";
+        dessinerPendu(erreurs);
+
+        if (erreurs === 8) {
+            fini = true;
+            setTimeout(() => alert("💀 Perdu ! Le mot était : " + mot), 200);
+        }
+    }
+}
+
+nouvellePartie();
+</script>
+
+</body>
+</html>

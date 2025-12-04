@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Echec - Jeu d'Échecs</title>
+<style>
+body {
+    font-family: "Segoe UI Symbol", "Poppins", sans-serif;
+    background: linear-gradient(135deg, #42f5d4, #7873f5, #ff6ec4);
+    background-size: 600% 600%;
+    animation: gradientAnim 15s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    color: white;
+}
+
+@keyframes gradientAnim {
+    0% {background-position:0% 50%;}
+    50% {background-position:100% 50%;}
+    100% {background-position:0% 50%;}
+}
+
+h1 { text-shadow: 2px 2px 10px #000; margin-bottom: 0; }
+
+#help, #backButton {
+    position: fixed;
+    top: 15px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 24px;
+    cursor: pointer;
+    text-shadow: 1px 1px 2px #000;
+    transition: 0.3s;
+}
+
+#backButton { left: 15px; }
+#help { right: 15px; }
+
+#help:hover, #backButton:hover { background: rgba(255,255,255,0.35); transform: scale(1.1); }
+
+#modeSelection, #botDifficulty {
+    margin-top: 10px;
+}
+
+#chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 70px);
+    grid-template-rows: repeat(8, 70px);
+    border: 4px solid rgba(255,255,255,0.5);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    margin-top: 20px;
+}
+
+.cell {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+}
+
+.cell.light { background: #eee; }
+.cell.dark { background: #555; }
+.cell.selected { outline: 3px solid yellow; }
+.cell.possible { background: rgba(255,255,0,0.4); }
+.cell.white { color: #f5e6c4; text-shadow: 1px 1px 2px #333; }
+.cell.black { color: #2b2d42; text-shadow: 1px 1px 3px #000; }
+
+#status { margin-top: 15px; font-size: 18px; text-shadow: 1px 1px 4px #000; }
+
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.25);
+    color: white;
+    transition: 0.3s;
+    backdrop-filter: blur(4px);
+}
+
+button:hover { background: rgba(255,255,255,0.45); }
+</style>
+</head>
+
+<body>
+
+<h1>Echec</h1>
+
+<div id="backButton" onclick="window.location.href='index.html'">←</div>
+<div id="help">?</div>
+
+<!-- MENU -->
+<div id="modeSelection">
+    <button onclick="start1v1()">👥 Jouer 1v1</button>
+    <button onclick="showBotLevels()">🤖 Jouer contre un Bot</button>
+</div>
+
+<div id="botDifficulty" style="display:none;">
+    <button onclick="startBot('easy')">Bot Facile 🤖</button>
+    <button onclick="startBot('normal')">Bot Normal 🤖</button>
+    <button onclick="startBot('hard')">Bot Difficile 🤖</button>
+</div>
+
+<div id="chessboard"></div>
+<div id="status">Tour : Blanc</div>
+
+<button onclick="resetBoard()">🔁 Rejouer</button>
+
+<script>
+// ****************** SYSTEME DE MODE DE JEU ******************
+
+let gameMode = "1v1";  
+let botDifficulty = "easy";
+
+function start1v1(){
+    gameMode = "1v1";
+    document.getElementById("botDifficulty").style.display = "none";
+    resetBoard();
+    alert("Mode 1v1 activé !");
+}
+
+function showBotLevels(){
+    document.getElementById("botDifficulty").style.display = "block";
+}
+
+function startBot(level){
+    gameMode = "bot";
+    botDifficulty = level;
+    resetBoard();
+    alert("Mode Bot : difficulté " + level);
+}
+
+// ****************** AIDE ******************
+helpEl = document.getElementById("help");
+helpEl.onclick = () => {
+    alert("Comment jouer :\n\n- Jouez en 1v1 ou contre un bot.\n- Chaque pièce se déplace selon ses règles.\n- Le but est de mettre le roi adverse en échec et mat.");
+};
+
+// ****************** PLATEAU ******************
+
+const boardEl = document.getElementById("chessboard");
+const statusEl = document.getElementById("status");
+
+let board = [];
+let selectedCell = null;
+let currentPlayer = "white";
+
+const PIECES = {
+  white: { K:"♔", Q:"♕", R:"♖", B:"♗", N:"♘", P:"♙" },
+  black: { K:"♚", Q:"♛", R:"♜", B:"♝", N:"♞", P:"♟" }
+};
+
+const initialBoard = [
+  ["bR","bN","bB","bQ","bK","bB","bN","bR"],
+  ["bP","bP","bP","bP","bP","bP","bP","bP"],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["wP","wP","wP","wP","wP","wP","wP","wP"],
+  ["wR","wN","wB","wQ","wK","wB","wN","wR"]
+];
+
+function createBoard() {
+    boardEl.innerHTML = "";
+    board = JSON.parse(JSON.stringify(initialBoard));
+
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const cell = document.createElement("div");
+            cell.classList.add("cell", (r+c)%2===0 ? "light":"dark");
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.onclick = () => cellClick(r,c);
+            boardEl.appendChild(cell);
+        }
+    }
+    renderBoard();
+}
+
+function renderBoard() {
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const cellEl = boardEl.children[r*8+c];
+            const piece = board[r][c];
+
+            cellEl.textContent = "";
+            cellEl.classList.remove("white","black","selected","possible");
+
+            if(piece){
+                const color = piece[0]==="w"?"white":"black";
+                const type = piece[1];
+                cellEl.textContent = PIECES[color][type];
+                cellEl.classList.add(color);
+            }
+        }
+    }
+}
+
+function isCurrentPlayer(piece){
+    if(!piece) return false;
+    return (currentPlayer==="white" && piece[0]==="w") ||
+           (currentPlayer==="black" && piece[0]==="b");
+}
+
+function getMoves(r,c){
+    const piece = board[r][c];
+    if(!piece) return [];
+
+    const color = piece[0];
+    const type = piece[1];
+    let moves = [];
+
+    function addMove(rr,cc){
+        if(rr<0||rr>7||cc<0||cc>7) return;
+        const target = board[rr][cc];
+        if(!target || target[0]!==color) moves.push([rr,cc]);
+    }
+
+    switch(type){
+        case "P":
+            const dir = color==="w"?-1:1;
+            if(!board[r+dir][c]) moves.push([r+dir,c]);
+            if(c>0 && board[r+dir][c-1] && board[r+dir][c-1][0]!==color) moves.push([r+dir, c-1]);
+            if(c<7 && board[r+dir][c+1] && board[r+dir][c+1][0]!==color) moves.push([r+dir, c+1]);
+            break;
+
+        case "R":
+            [[1,0],[0,1],[-1,0],[0,-1]].forEach(d=>slideMove(r,c,d,moves,color));
+            break;
+
+        case "B":
+            [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>slideMove(r,c,d,moves,color));
+            break;
+
+        case "Q":
+            [[1,0],[0,1],[-1,0],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>slideMove(r,c,d,moves,color));
+            break;
+
+        case "N":
+            [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]].forEach(d=>addMove(r+d[0],c+d[1]));
+            break;
+
+        case "K":
+            [[1,0],[0,1],[-1,0],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>addMove(r+d[0],c+d[1]));
+            break;
+    }
+
+    return moves;
+}
+
+function slideMove(r,c,d,moves,color){
+    let rr=r+d[0], cc=c+d[1];
+    while(rr>=0&&rr<8&&cc>=0&&cc<8){
+        if(!board[rr][cc]) moves.push([rr,cc]);
+        else { 
+            if(board[rr][cc][0]!==color) moves.push([rr,cc]);
+            break; 
+        }
+        rr+=d[0];
+        cc+=d[1];
+    }
+}
+
+function cellClick(r,c){
+    const piece = board[r][c];
+
+    if(selectedCell){
+        const moves = getMoves(selectedCell.row, selectedCell.col);
+        if(moves.some(m=>m[0]===r && m[1]===c)){
+            board[r][c] = board[selectedCell.row][selectedCell.col];
+            board[selectedCell.row][selectedCell.col] = "";
+            selectedCell = null;
+
+            currentPlayer = currentPlayer==="white"?"black":"white";
+            renderBoard();
+            statusEl.textContent = "Tour : " + (currentPlayer==="white"?"Blanc":"Noir");
+
+            if(gameMode==="bot" && currentPlayer==="black"){
+                setTimeout(botTurn, 400);
+            }
+            return;
+        }
+        selectedCell = null;
+        renderBoard();
+    } 
+    else if(isCurrentPlayer(piece)){
+        selectedCell = {row:r, col:c};
+        renderBoard();
+        const moves = getMoves(r,c);
+        boardEl.children[r*8+c].classList.add("selected");
+        moves.forEach(m => boardEl.children[m[0]*8+m[1]].classList.add("possible"));
+    }
+}
+
+// ****************** BOTS ******************
+
+function botTurn(){
+    if(botDifficulty==="easy") botPlayEasy();
+    if(botDifficulty==="normal") botPlayNormal();
+    if(botDifficulty==="hard") botPlayHard();
+
+    currentPlayer = "white";
+    renderBoard();
+    statusEl.textContent = "Tour : Blanc";
+}
+
+function getAllMoves(color){
+    const all = [];
+
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const p = board[r][c];
+            if(p && p[0]===color[0]){
+                const moves = getMoves(r,c);
+                moves.forEach(m => {
+                    all.push({
+                        fromR: r, fromC: c,
+                        toR: m[0], toC: m[1],
+                        capture: board[m[0]][m[1]] !== ""
+                    });
+                });
+            }
+        }
+    }
+    return all;
+}
+
+function playMove(m){
+    board[m.toR][m.toC] = board[m.fromR][m.fromC];
+    board[m.fromR][m.fromC] = "";
+}
+
+function botPlayEasy(){
+    const moves = getAllMoves("black");
+    if(moves.length===0) return;
+    playMove(moves[Math.floor(Math.random()*moves.length)]);
+}
+
+function botPlayNormal(){
+    const moves = getAllMoves("black");
+    if(moves.length===0) return;
+
+    const captures = moves.filter(m=>m.capture);
+    if(captures.length>0){
+        playMove(captures[Math.floor(Math.random()*captures.length)]);
+        return;
+    }
+
+    playMove(moves[Math.floor(Math.random()*moves.length)]);
+}
+
+function evaluateBoard(){
+    const values = {K:1000, Q:9, R:5, B:3, N:3, P:1};
+    let score=0;
+
+    for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+            const p = board[r][c];
+            if(!p) continue;
+            score += (p[0]==="b"?1:-1) * values[p[1]];
+        }
+    }
+    return score;
+}
+
+function botPlayHard(){
+    const moves = getAllMoves("black");
+    let bestMove=null;
+    let bestScore=-9999;
+
+    for(const m of moves){
+        const backup = board[m.toR][m.toC];
+
+        board[m.toR][m.toC] = board[m.fromR][m.fromC];
+        board[m.fromR][m.fromC] = "";
+
+        const score = evaluateBoard();
+
+        board[m.fromR][m.fromC] = board[m.toR][m.toC];
+        board[m.toR][m.toC] = backup;
+
+        if(score > bestScore){
+            bestScore = score;
+            bestMove = m;
+        }
+    }
+
+    if(bestMove) playMove(bestMove);
+}
+
+// ****************** RESET ******************
+
+function resetBoard(){
+    createBoard();
+    currentPlayer = "white";
+    statusEl.textContent = "Tour : Blanc";
+}
+
+createBoard();
+</script>
+
+</body>
+</html>
